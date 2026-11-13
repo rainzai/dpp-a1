@@ -1,22 +1,48 @@
-/*
- * simulate.c
- *
- * Implement your (parallel) simulation here!
- */
-
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "simulate.h"
 
-/* Add any global variables you may need. */
+// shared by all threads
+double *old, *cur, *next;
+int g_i_max, g_t_max;
+pthread_barrier_t barrier;
 
-/* Add any functions you may need (like a worker) here. */
+// data for each thread
+typedef struct {
+    int start, end;
+    int id;
+} t_data;
+
+// computes its own range of points for every time step.
+void* thread(void* vargp) {
+    t_data* d = (t_data*)vargp;
+    const double c = 0.15;
+
+    for (int t = 0; t < g_t_max; t++) {
+        for (int i = d->start; i < d->end; i++) {
+            // given formula
+            next[i] = 2 * cur[i] - old[i] +
+                      c * (cur[i - 1] - (2 * cur[i] - cur[i + 1]));
+        }
+        pthread_barrier_wait(&barrier);
+
+        //  rotates the shared buffers
+        if (d->id == 0) {
+            double* tmp = old;
+            old = cur;
+            cur = next;
+            next = tmp;
+        }
+        // wait until the swap is done
+        pthread_barrier_wait(&barrier);
+    }
+    return NULL;
+}
 
 /*
  * Executes the entire simulation.
- *
- * Implement your code here.
  *
  * i_max: how many data points are on a single wave
  * t_max: how many iterations the simulation should run
@@ -27,27 +53,31 @@
  */
 double* simulate(const int i_max, const int t_max, const int num_threads,
                  double* old_array, double* current_array, double* next_array) {
+    old = old_array;
+    cur = current_array;
+    next = next_array;
+    g_i_max = i_max;
+    g_t_max = t_max;
 
-    /*
-     * After each timestep, you should swap the buffers around. Watch out none
-     * of the threads actually use the buffers at that time.
-     */
-    const double c = 0.15;
+    pthread_t* thd = (pthread_t*)malloc(sizeof(pthread_t) * num_threads);
+    t_data* myData = (t_data*)malloc(sizeof(t_data) * num_threads);
 
-    for (int t = 0; t < t_max; t++) {
-        for (int i = 1; i < i_max - 1; i++) {
-            // given formula
-            next_array[i] = 2 * current_array[i] - old_array[i] +
-                            c * (current_array[i - 1] -
-                                 (2 * current_array[i] - current_array[i + 1]));
-        }
+    pthread_barrier_init(&barrier, NULL, num_threads);
 
-        double* tmp = old_array;
-        old_array = current_array;
-        current_array = next_array;
-        next_array = tmp;
+    int length = i_max - 2;
+    for (int i = 0; i < num_threads; i++) {
+        myData[i].id = i;
+        myData[i].start = 1 + i * length / num_threads;
+        myData[i].end = 1 + (i + 1) * length / num_threads;
+        pthread_create(&thd[i], NULL, thread, (void*)&myData[i]);
     }
+    for (int i = 0; i < num_threads; i++)
+        pthread_join(thd[i], NULL);
+
+    pthread_barrier_destroy(&barrier);
+    free(thd);
+    free(myData);
 
     /* You should return a pointer to the array with the final results. */
-    return current_array;
+    return cur;
 }

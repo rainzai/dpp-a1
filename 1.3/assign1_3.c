@@ -30,8 +30,7 @@ typedef struct {
 static void start_thread(void *(*func)(void *), void *arg);
 
 /* Generator: sends 2, 3, 4, ... to its output queue, forever. */
-static void *generator(void *arg)
-{
+static void *generator(void *arg) {
     queue_t *out = arg;
 
     for (int n = 2;; n++) {
@@ -45,13 +44,14 @@ static void *generator(void *arg)
  * numbers that aren't a multiple of it are forwarded to the next filter,
  * which is created when the first such number arrives.
  */
-static void *filter(void *arg)
-{
+static void *filter(void *arg) {
+
     filter_arg_t *f = arg;
     queue_t *out = NULL;
 
     int prime = queue_take(f->in);
     printf("%d\n", prime);
+
     if (f->index == num_primes) {
         fflush(stdout);
         exit(EXIT_SUCCESS); /* stops all threads */
@@ -62,12 +62,15 @@ static void *filter(void *arg)
         if (n % prime == 0) {
             continue;
         }
+
         if (out == NULL) {
             filter_arg_t *next = malloc(sizeof(filter_arg_t));
+
             if (next == NULL) {
                 fprintf(stderr, "Could not allocate filter arguments.\n");
                 exit(EXIT_FAILURE);
             }
+
             out = queue_create();
             next->in = out;
             next->index = f->index + 1;
@@ -79,28 +82,30 @@ static void *filter(void *arg)
 }
 
 /* Starts a detached thread with a small stack, exits on failure. */
-static void start_thread(void *(*func)(void *), void *arg)
-{
+static void start_thread(void *(*func)(void *), void *arg) {
     pthread_attr_t attr;
     pthread_t tid;
 
     pthread_attr_init(&attr);
     pthread_attr_setstacksize(&attr, STACK_SIZE);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
     if (pthread_create(&tid, &attr, func, arg) != 0) {
         fprintf(stderr, "Could not create thread.\n");
         exit(EXIT_FAILURE);
     }
+
     pthread_attr_destroy(&attr);
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     if (argc < 2) {
         printf("Usage: %s <number of primes>\n", argv[0]);
         return EXIT_FAILURE;
     }
+
     num_primes = atoi(argv[argc - 1]);
+
     if (num_primes < 1) {
         printf("argument error: number of primes should be >= 1.\n");
         return EXIT_FAILURE;
@@ -111,6 +116,7 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Could not allocate filter arguments.\n");
         return EXIT_FAILURE;
     }
+
     first->in = queue_create();
     first->index = 1;
 

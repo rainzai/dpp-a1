@@ -1,10 +1,11 @@
 /*
  * assign1_3.c
  *
- * Multithreaded Sieve of Eratosthenes. Generator thread sends 2, 3, 4, ...
- * into pipeline of filter threads that are connected by bounded queues.
- * Filter k prints the k-th prime and removes its multiples from the stream.
- * The program exits after printing the requested number of primes.
+ * A multithreaded Sieve of Eratosthenes. One generator thread sends numbers
+ * starting from 2, 3, 4 etc. in a pipeline of filter threads that are 
+ * connected by bounded queues. Each filter prints a numnber and deletes its
+ * multiples before giving the remainders numbers to the next filter. The
+ * Program stops after printing the requested number of primes.
  *
  * Usage: ./assign1_3 <number of primes>
  *        (the last argument is used, so "./assign1 3 <n>" also works)
@@ -21,15 +22,15 @@
 
 static int num_primes; /* number of primes to print before exiting */
 
-/* Arguments for 1 filter thread. */
+/* Arguments for one filter thread. */
 typedef struct {
-    queue_t *in; /* queue with the prime candidates for this filter */
-    int index;   /* this filter prints the index-th prime (counted from 1) */
+    queue_t *in; /* queue with prime candidates. */
+    int index;   /* position of the prime, starting from 1. */
 } filter_arg_t;
 
 static void start_thread(void *(*func)(void *), void *arg);
 
-/* Generator: sends 2, 3, 4, ... to its output queue, forever. */
+/* Generator: sends 2, 3, 4 and on. to its output queue, forever. */
 static void *generator(void *arg) {
     queue_t *out = arg;
 
@@ -40,9 +41,9 @@ static void *generator(void *arg) {
 }
 
 /*
- * Filter: first number received is a prime, which is printed. All later
+ * Filter: 1st number received is a prime, which is printed. All later
  * numbers that aren't a multiple of it are forwarded to the next filter,
- * which is created when the first such number arrives.
+ * which is then created when first such number arrives.
  */
 static void *filter(void *arg) {
 
@@ -54,10 +55,11 @@ static void *filter(void *arg) {
 
     if (f->index == num_primes) {
         fflush(stdout);
-        exit(EXIT_SUCCESS); /* stops all threads */
+        exit(EXIT_SUCCESS);
     }
 
     for (;;) {
+
         int n = queue_take(f->in);
         if (n % prime == 0) {
             continue;
@@ -81,8 +83,9 @@ static void *filter(void *arg) {
     return NULL;
 }
 
-/* Starts a detached thread with a small stack, exits on failure. */
+/* Starts a detached thread with an small stack and exits on failure. */
 static void start_thread(void *(*func)(void *), void *arg) {
+
     pthread_attr_t attr;
     pthread_t tid;
 
@@ -99,6 +102,7 @@ static void start_thread(void *(*func)(void *), void *arg) {
 }
 
 int main(int argc, char *argv[]) {
+
     if (argc < 2) {
         printf("Usage: %s <number of primes>\n", argv[0]);
         return EXIT_FAILURE;
@@ -112,6 +116,7 @@ int main(int argc, char *argv[]) {
     }
 
     filter_arg_t *first = malloc(sizeof(filter_arg_t));
+
     if (first == NULL) {
         fprintf(stderr, "Could not allocate filter arguments.\n");
         return EXIT_FAILURE;

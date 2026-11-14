@@ -12,7 +12,6 @@ WARNFLAGS = -Wall -Werror-implicit-function-declaration -Wshadow \
 CFLAGS = -std=c99 -ggdb -O2 $(WARNFLAGS) -D_POSIX_C_SOURCE=200112
 LFLAGS = -lpthread
 
-# Do some substitution to get a list of .o files from the given .c files.
 OBJFILES = $(patsubst %.c,%.o,$(SRCFILES))
 
 .PHONY: all run runlocal clean dist

@@ -1,14 +1,11 @@
 /*
  * queue.h
- *
  * Bounded, thread-safe FIFO queue of integers. Producers block while the
  * queue is full, consumers block while it is empty.
  */
 
 #pragma once
-
 #include <pthread.h>
-
 #define QUEUE_SIZE 16
 
 typedef struct {

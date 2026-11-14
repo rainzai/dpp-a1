@@ -21,7 +21,7 @@ all: $(PROGNAME) assign1
 $(PROGNAME): $(OBJFILES)
 	$(CC) $(CFLAGS) -o $@ $^ $(LFLAGS)
 
-# Copy named assign1, so that "./assign1 3 <number of primes>" also works.
+# Copy named assign1, so that "./assign1 3 <number of primes>" works.
 assign1: $(PROGNAME)
 	cp $(PROGNAME) assign1
 

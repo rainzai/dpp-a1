@@ -2,14 +2,14 @@
  * queue.c
  *
  * Bounded queue protected by 1 mutex and 2 condition variables.
+ *
  */
 
 #include <stdio.h>
 #include <stdlib.h>
-
 #include "queue.h"
 
-/* Allocates and initialises an empty queue. Exits if out of memory. */
+/* Allocates and initialises an empty queue. Terminate if out of memory. */
 queue_t *queue_create(void) {
     queue_t *q = malloc(sizeof(queue_t));
 
@@ -26,7 +26,7 @@ queue_t *queue_create(void) {
     return q;
 }
 
-/* Appends value, blocks while  queue is full. */
+/* Appends value, blocks while  queue full. */
 void queue_put(queue_t *q, int value) {
     pthread_mutex_lock(&q->lock);
 
@@ -40,7 +40,7 @@ void queue_put(queue_t *q, int value) {
     pthread_mutex_unlock(&q->lock);
 }
 
-/* Removes and returns the oldest value, blocks while queue is empty. */
+/* Removes and returns the oldest value, blocks while queue empty. */
 int queue_take(queue_t *q) {
 
     pthread_mutex_lock(&q->lock);
@@ -52,6 +52,7 @@ int queue_take(queue_t *q) {
     int value = q->buf[q->head];
     q->head = (q->head + 1) % QUEUE_SIZE;
     q->count--;
+
     pthread_cond_signal(&q->not_full);
     pthread_mutex_unlock(&q->lock);
     return value;

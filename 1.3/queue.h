@@ -2,6 +2,7 @@
  * queue.h
  * Bounded, thread-safe FIFO queue of integers. Producers block while the
  * queue is full, consumers block while it is empty.
+ * 
  */
 
 #pragma once
